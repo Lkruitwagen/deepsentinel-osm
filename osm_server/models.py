@@ -147,8 +147,8 @@ class OSMRoads(Base):
     tags               = Column(String)
     way                = Column(Geometry('LINESTRING'))
  
-class OSMLines(Base):
-    __tablename__ = 'planet_osm_lines'
+class OSMLine(Base):
+    __tablename__ = 'planet_osm_line'
 
     osm_id             = Column(BigInteger, primary_key=True)
     access             = Column(String)
