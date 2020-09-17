@@ -6,7 +6,6 @@ from flask_basicauth import BasicAuth
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from geoalchemy2.shape import from_shape
-from shapely import geometry, ops
 
 from osm_server.utils import wgs2web
 from osm_server.models import OSMLine, OSMRoads, OSMPolygon, OSMPoint
@@ -27,6 +26,58 @@ if "BASIC_AUTH_USERNAME" in os.environ:
 def hello():
     return "<h1 style='color:blue'>Hello There!</h1>"
 
+@app.route("/query/<geom_type>", methods=["GET","POST"]):
+    if request.args.get("geom_type") not in ['points','polygons','lines']:
+        return jsonify({'error':'"geom_type" must be one of ["points","polygons","lines"]'})
+    elif request.args.get("geom_type")=='points':
+        OSM_OBJ = OSMPoint
+    elif request.args.get("geom_type")=='polygons':
+        OSM_OBJ = OSMPolygon
+    elif request.args.get("geom_type")=='lines':
+        OSM_OBJ = OSMLine
+
+    if 'feature' not in request.form.keys():
+        return jsonify({'error': '"feature" not in request body keys.'})
+    else:
+        ft = json.loads(request.form["feature"])
+
+    ## TODO: validate geojson
+
+    if 'continent' not in ft['properties'].keys():
+        return jsonify({'error':'"continent" must be specified in feature properties.'})
+
+    continent = ft["properties"]["continent"]
+
+    if continent not in CONTINENTS:
+        return jsonify({'error':'"continent" must be one of {}'.format(','.join(CONTINENTS))})
+
+    geom = geometry.shape(ft['geometry'])
+
+    engine = create_engine(os.environ['DB_URI']+continent)
+    session = sessionmaker(bind=engine)()
+
+    query = session.query(OSM_OBJ).filter(OSM_OBJ.way.ST_Intersects(from_shape(wgs2web(geom), srid=3857)))
+
+    result = query.all()
+
+    results_json = []
+
+    for ii_r, r in enumerate(result):
+        print ('r',r)
+
+        res_dict['properties'] = {kk:r.__getattribute__(kk) for kk in dir(OSM_OBJ) if not (kk.startswith('_') or kk=='metadata' or kk=='way') and r.__getattribute__(kk) is not None}
+        res_dict['geometry'] = str(r.way)
+
+        results_json.append(res_dict)
+
+    results_json = {'features': results_json}
+
+    print ('results_json',results_json)
+
+    return jsonify(results_json)
+
+
+
 @app.route("/query/points", methods=["POST"])
 def api_query_points():
 
@@ -39,7 +90,7 @@ def api_query_points():
 
     print ('geom',geometry.mapping(ops.transform(wgs2web,geom)))
 
-    query = session.query(OSMPoint).filter(OSMPoint.way.ST_Intersects(from_shape(ops.transform(wgs2web,geom), srid=3857)))
+    query = session.query(OSMPoint).filter(OSMPoint.way.ST_Intersects(from_shape(wgs2web(geom), srid=3857)))
 
     result = query.all()
 
@@ -71,7 +122,7 @@ def api_query_lines():
 
     print ('geom',geometry.mapping(ops.transform(wgs2web,geom)))
 
-    query = session.query(OSMLine).filter(OSMLine.way.ST_Intersects(from_shape(ops.transform(wgs2web,geom), srid=3857)))
+    query = session.query(OSMLine).filter(OSMLine.way.ST_Intersects(from_shape(wgs2web(geom), srid=3857)))
 
     result = query.all()
 
@@ -103,7 +154,7 @@ def api_query_polygons():
 
     print ('geom',geometry.mapping(ops.transform(wgs2web,geom)))
 
-    query = session.query(OSMPolygon).filter(OSMPolygon.way.ST_Intersects(from_shape(ops.transform(wgs2web,geom), srid=3857)))
+    query = session.query(OSMPolygon).filter(OSMPolygon.way.ST_Intersects(from_shape(wgs2web(geom), srid=3857)))
 
     result = query.all()
 
