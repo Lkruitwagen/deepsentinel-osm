@@ -9,10 +9,10 @@ partial_wgs2web = partial(pyproj.transform, PROJ_WGS, PROJ_WEB)
 partial_web2wgs = partial(pyproj.transform, PROJ_WEB, PROJ_WGS)
 
 def wgs2web(geom):
-	ops.transform(partial_wgs2web, geom)
+    return ops.transform(partial_wgs2web, geom)
 
 def web2wgs(geom):
-	ops.transform(partial_web2wgs, geom)
+    return ops.transform(partial_web2wgs, geom)
 
 
 
