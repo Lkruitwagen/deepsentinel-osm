@@ -48,7 +48,7 @@ def api_query():
     if 'feature' not in request.form.keys():
         return jsonify({'error': '"feature" not in request body keys. Got: {}'.format(','.join(request.form.keys()))})
     else:
-        ft = json.loads(json.loads(request.form["feature"]))
+        ft = json.loads(request.form["feature"])
 
     ## TODO: validate geojson
     print ('ft',ft, ft['properties'].keys(), ft['geometry'].keys())
