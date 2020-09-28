@@ -114,9 +114,9 @@ Let's use Python, [requests](https://pypi.org/project/requests/), [geojson](http
     # set your basicauth username and password
     U, P = "<your_basicauth_username>", "<your_basicauth_password>"
 
-    # prepare the query
-    url = "http://<your_IP>:5000/query/<geometry_type>"  # where geometry_type is one of points, lines, or polygons
-    body = {'feature':json.dumps(ft)}
+    # prepare the query, specifying geom_type
+    url = "http://<your_IP>:5000/query"  
+    body = {'feature':json.dumps(ft), 'geom_type':'polygons'} # where geometry_type is one of points, lines, or polygons
 
     # execute the query
     response = requests.post(url, body, auth=(U,P))
