@@ -63,19 +63,9 @@ def api_query():
 
     geom = geometry.shape(ft['geometry'])
 
-    #attr_columns = []
-    #for kk,vv in vars(OSM_OBJ).items():
-    #    print ('kk',kk)
-    #    if not (kk.startswith('_') or kk=='metadata' or kk=='way'):
-    #        print ('getting')
-    #        attr_columns.append(vv)
-    #print ('attr columns',attr_columns)
-
     attr_columns = [vv for kk,vv in vars(OSM_OBJ).items() if not (kk.startswith('_') or kk=='metadata' or kk=='way')]
     geom_column = OSM_OBJ.way.ST_Intersection(from_shape(wgs2web(geom), srid=3857))
     query_columns = attr_columns+[geom_column]
-
-    print ('query cols', query_columns)
 
     engine = create_engine(os.environ['DB_URI']+continent)
     session = sessionmaker(bind=engine)()
@@ -87,12 +77,11 @@ def api_query():
     results_json = []
 
     for ii_r, r in enumerate(result):
-        print ('r',r)
-        print ('dir',dir(r))
+
         res_dict = {}
 
         res_dict['properties'] = {kk:r.__getattribute__(kk) for kk in dir(OSM_OBJ) if not (kk.startswith('_') or kk=='metadata' or kk=='way') and r.__getattribute__(kk) is not None}
-        res_dict['geometry'] = str(r[-1])#.way)
+        res_dict['geometry'] = str(r[-1])
 
         results_json.append(res_dict)
 
